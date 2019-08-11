@@ -14,6 +14,65 @@ apihelper.proxy = {
 # Telebot
 bot = telebot.TeleBot(config.API['Telegramapikey'])
 
+# DB
+
+def start_server():
+    create_db()
+    create_db_tables()
+    
+    bot.polling(none_stop=True)
+    print('server started')
+
+def create_db():
+    try:
+        print ("Creating DB...")
+        with closing(pymysql.connect(
+            host=config.DATABASE_CONFIG['host'],
+            user=config.DATABASE_CONFIG['user'],
+            password=config.DATABASE_CONFIG['password'],
+            db=config.DATABASE_CONFIG['db'],
+            charset=config.DATABASE_CONFIG['charset'],
+            cursorclass=DictCursor
+        )) as connection:
+            with connection.cursor() as cursor:
+                query = """CREATE DATABASE IF NOT EXISTS `ilushlingbot` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
+                cursor.execute(query)
+                connection.commit()
+                
+                print ("DB created")
+    except Exception as exc:
+        print ("Error create DB")
+        print (exc)
+
+def create_db_tables():
+    try:
+        print ("Creating DB tables...")
+        with closing(pymysql.connect(
+            host=config.DATABASE_CONFIG['host'],
+            user=config.DATABASE_CONFIG['user'],
+            password=config.DATABASE_CONFIG['password'],
+            db=config.DATABASE_CONFIG['db'],
+            charset=config.DATABASE_CONFIG['charset'],
+            cursorclass=DictCursor
+        )) as connection:
+            with connection.cursor() as cursor:
+                query = """
+                CREATE TABLE IF NOT EXISTS `users` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `chat_id` int(11) NOT NULL,
+                `user_id` int(11) DEFAULT NULL,
+                `visible` tinyint(1) NOT NULL DEFAULT 1,
+                PRIMARY KEY (`id`),
+                KEY `id` (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT;"""
+                cursor.execute(query)
+                connection.commit()
+                
+                print ("DB tables created")
+    except Exception as exc:
+        print ("Error create DB")
+        print (exc)
+
 def check_chat(message):
     try:
         with closing(pymysql.connect(
@@ -257,4 +316,4 @@ def echo_all(message):
         print ("Error echo")
         print (exc)
 
-bot.polling(none_stop=True)
+start_server()
