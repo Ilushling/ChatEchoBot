@@ -1,4 +1,4 @@
-# ilushlingbot
+# chatEchoBot
 
 Telegram echo bot
 
