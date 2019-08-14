@@ -15,6 +15,7 @@ Install:
 
 Run:
 ```
-Enter to cmd:
+1 Run MySQL Server
+2) Enter to cmd:
 - bot.py
 ```
