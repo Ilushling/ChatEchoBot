@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import telebot
 from telebot import apihelper
@@ -8,13 +7,15 @@ from pymysql.cursors import DictCursor
 from contextlib import closing
 import pyowm
 import config
+import os
+from PIL import Image, ImageDraw
 
 # Proxy
 #apihelper.proxy = {
 #    'https': config.PROXY
 #}
 # Telebot
-bot = telebot.TeleBot(config.API['Telegramapikey'])
+bot = telebot.TeleBot(config.API['TelegramApiKey'])
 
 # DB
 
@@ -156,63 +157,53 @@ def check_visible(message):
     except Exception as exc:
         print (exc)
 
-
 @bot.message_handler(commands=["start"])
 def start_message(message):
     bot.send_message(message.chat.id, u"Привет " +
-        message.from_user.username + u"\nЭто чат, ты здесь можешь сообщение и другие его увидят")
+        message.from_user.username + u"\nЭто чат, ты здесь можешь отправить сообщение и другие его увидят")
     try:
         if not check_chat(message):
             print('New chat ' + str(message.chat.id))
             save_chat(message)
-            markup = telebot.types.InlineKeyboardMarkup()
-            buttonv = telebot.types.InlineKeyboardButton(text='visible', callback_data='visible|' +
-                                                         str(message.chat.id) + '|' + str(message.from_user.id))
-            buttoni = telebot.types.InlineKeyboardButton(text='invisible', callback_data='invisible|' +
-                                                         str(message.chat.id) + '|' + str(message.from_user.id))
-            buttonw = telebot.types.InlineKeyboardButton(text='weather', callback_data='weather|' +
-                                                         str(message.chat.id) + '|' + str(message.from_user.id))
-            markup.add(buttonv)
-            markup.add(buttoni)
-            markup.add(buttonw)
-            bot.send_message(chat_id=message.chat.id, text='Help', reply_markup=markup)
+            help(message)
     except Exception as exc:
         print (exc)
-# button handler
-@bot.callback_query_handler(func=lambda call: True)
-def query_handler(call):
-    data = call.data.split('|')
-    if data[0] == 'visible':
-        visible(False, data[1], data[2])
-        bot.answer_callback_query(callback_query_id=call.id, text='visible')
-    if data[0] == 'invisible':
-        invisible(False, data[1], data[2])
-        bot.answer_callback_query(callback_query_id=call.id, text='invisible')
-    if data[0] == 'weather':
-        weather(False, data[1], data[2])
+
 
 @bot.message_handler(commands=["help"])
 def help(message):
     markup = telebot.types.InlineKeyboardMarkup()
-    buttonv = telebot.types.InlineKeyboardButton(text='visible', callback_data='visible|' +
-                                                         str(message.chat.id) + '|' + str(message.from_user.id))
-    buttoni = telebot.types.InlineKeyboardButton(text='invisible', callback_data='invisible|' +
-                                                         str(message.chat.id) + '|' + str(message.from_user.id))
-    buttonw = telebot.types.InlineKeyboardButton(text='weather', callback_data='weather|' +
-                                                         str(message.chat.id) + '|' + str(message.from_user.id))
+    buttonv = telebot.types.InlineKeyboardButton(text='visible', callback_data='visible')
+    buttoni = telebot.types.InlineKeyboardButton(text='invisible', callback_data='invisible')
+    buttonw = telebot.types.InlineKeyboardButton(text='weather', callback_data='weather')
+    buttonr = telebot.types.InlineKeyboardButton(text='resize image for sticker', callback_data='resize_image_for_sticker')
     markup.add(buttonv)
     markup.add(buttoni)
     markup.add(buttonw)
-    bot.send_message(chat_id=message.chat.id, text='Help', reply_markup=markup)
+    markup.add(buttonr)
+    bot.send_message(chat_id=message.from_user.id, text='Help', reply_markup=markup)
+
+# button handler
+@bot.callback_query_handler(func=lambda call: True)
+def query_handler(call):
+    if call.message:
+        if call.data:
+            if call.data == 'visible':
+                visible(call.message)
+                bot.answer_callback_query(callback_query_id=call.id, text='visible')
+            if call.data == 'invisible':
+                invisible(call.message)
+                bot.answer_callback_query(callback_query_id=call.id, text='invisible')
+            if call.data == 'weather':
+                weather(call.message)
+                bot.answer_callback_query(callback_query_id=call.id, text='weather')
+            if call.data == 'resize_image_for_sticker':
+                switch_resize_image_for_sticker(call.message)
+                bot.answer_callback_query(callback_query_id=call.id, text='resize_image_for_sticker')
 
 # visible
 @bot.message_handler(commands=["visible"])
-def visible(message, chat_id = False, user_id = False):
-    if not chat_id:
-        chat_id = message.chat.id
-    if not user_id:
-        user_id = message.from_user.id
-
+def visible(message):
     try:
         with closing(pymysql.connect(
             host=config.DATABASE_CONFIG['host'],
@@ -223,22 +214,17 @@ def visible(message, chat_id = False, user_id = False):
             cursorclass=DictCursor
         )) as connection:
             with connection.cursor() as cursor:
-                query = "UPDATE users SET visible = 1 WHERE user_id = " + str(user_id)
+                query = "UPDATE users SET visible = 1 WHERE user_id = " + str(message.from_user.id)
                 cursor.execute(query)
                 connection.commit()
-                bot.send_message(chat_id, u"Твой ник видно в чате")
+                bot.send_message(message.chat.id, u"Твой ник видно в чате")
     except Exception as exc:
         print ('visible')
         print (exc)
 
 # invisible
 @bot.message_handler(commands=["invisible"])
-def invisible(message, chat_id = False, user_id = False):
-    if not chat_id:
-        chat_id = message.chat.id
-    if not user_id:
-        user_id = message.from_user.id
-
+def invisible(message):
     try:
         with closing(pymysql.connect(
             host=config.DATABASE_CONFIG['host'],
@@ -249,28 +235,69 @@ def invisible(message, chat_id = False, user_id = False):
             cursorclass=DictCursor
         )) as connection:
             with connection.cursor() as cursor:
-                query = "UPDATE users SET visible = 0 WHERE user_id = " + str(user_id)
+                query = "UPDATE users SET visible = 0 WHERE user_id = " + str(message.from_user.id)
                 cursor.execute(query)
                 connection.commit()
-                bot.send_message(chat_id, u"Твой ник не отображается в чате")
+                bot.send_message(message.chat.id, u"Твой ник не отображается в чате")
     except Exception as exc:
         print ('invisible')
         print (exc)
 
+# weather
 @bot.message_handler(commands=["weather"])
-def weather(message, chat_id = False, user_id = False):
-    if not chat_id:
-        chat_id = message.chat.id
-    if not user_id:
-        user_id = message.from_user.id
-
-
-    owm = pyowm.OWM(config.API['OWMapikey'])
+def weather(message):
+    owm = pyowm.OWM(config.API['OWMApiKey'])
     observation = owm.weather_at_place('Moscow')
     w = observation.get_weather()
     temp = str(w.get_temperature('celsius')['temp']).split('.')[0]
-    bot.send_message(chat_id, 'Temperature: ' + temp + ' C')
+    bot.send_message(message.chat.id, 'Temperature: ' + temp + ' C')
 
+# resize for telegram sticker
+need_resize_image_for_sticker = False
+@bot.message_handler(commands=["resize_image_for_sticker"])
+def switch_resize_image_for_sticker(message):
+    global need_resize_image_for_sticker
+    need_resize_image_for_sticker = not need_resize_image_for_sticker
+    if need_resize_image_for_sticker == True:
+        bot.send_message(message.chat.id, 'Для преобразования изображения для стикера отправьте jpg или png')
+    else:
+        bot.send_message(message.chat.id, 'Преобразование для стикера отменено')
+
+def resize_image_for_sticker(message):
+    try:
+        file = bot.download_file(bot.get_file(message.document.file_id).file_path)
+        src_original = message.document.file_name
+        with open(src_original, 'wb') as new_file:
+            new_file.write(file)
+        image = Image.open(src_original)
+        width = image.width
+        height = image.height
+        if width > 512 or height > 512:
+            if width > height:
+                factor = 512 / width
+            else:
+                factor = 512 / height
+        image = image.resize((int(width * factor), int(height * factor)), Image.ANTIALIAS)
+
+        src_converted = 'converted_' + message.document.file_name
+        image.save(src_converted, "PNG")
+        if message.document.mime_type == 'image/jpeg' or message.document.mime_type == 'image/png':
+            bot.send_document(message.from_user.id, open(src_converted, 'rb'))
+            bot.send_message(message.chat.id, 'Изображение преобразовано')
+            if os.path.isfile(src_converted):
+                os.remove(src_converted)
+                if os.path.isfile(src_original):
+                    os.remove(src_original)
+                    need_resize_image_for_sticker = False
+                else:
+                    print("Error: %s file not found" % src_converted)
+            else:
+                print("Error: %s file not found" % src_converted)
+        else:
+            bot.send_message(message.chat.id, 'Отправьте jpg или png')
+    except Exception as exc:
+        print ("Error resize")
+        print (exc)
 '''
 ECHO
 '''
@@ -311,8 +338,11 @@ def echo_all(message):
                     bot.send_message(chat, username + u" отправил: ")
                     bot.send_video(chat, message.video.file_id)
                 if message.content_type == 'document':
-                    bot.send_message(chat, username + u" отправил: ")
-                    bot.send_document(chat, message.document.file_id)
+                    if need_resize_image_for_sticker == True:
+                        resize_image_for_sticker(message)
+                    else:
+                        bot.send_message(chat, username + u" отправил: ")
+                        bot.send_document(chat, message.document.file_id)
 
     except Exception as exc:
         print ("Error echo")
