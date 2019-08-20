@@ -1,3 +1,5 @@
+
+# -*- coding: utf-8 -*-
 import telebot
 from telebot import apihelper
 from telebot import types
@@ -8,9 +10,9 @@ import pyowm
 import config
 
 # Proxy
-apihelper.proxy = {
-    'https': config.PROXY
-}
+#apihelper.proxy = {
+#    'https': config.PROXY
+#}
 # Telebot
 bot = telebot.TeleBot(config.API['Telegramapikey'])
 
@@ -19,9 +21,9 @@ bot = telebot.TeleBot(config.API['Telegramapikey'])
 def start_server():
     create_db()
     create_db_tables()
-    
-    bot.polling(none_stop=True)
+
     print('server started')
+    bot.polling(none_stop=True)
 
 def create_db():
     try:
@@ -35,10 +37,10 @@ def create_db():
             cursorclass=DictCursor
         )) as connection:
             with connection.cursor() as cursor:
-                query = """CREATE DATABASE IF NOT EXISTS `ilushlingbot` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
+                query = """CREATE DATABASE IF NOT EXISTS `ilushling$ilushlingbot` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
                 cursor.execute(query)
                 connection.commit()
-                
+
                 print ("DB created")
     except Exception as exc:
         print ("Error create DB")
@@ -67,7 +69,7 @@ def create_db_tables():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT;"""
                 cursor.execute(query)
                 connection.commit()
-                
+
                 print ("DB tables created")
     except Exception as exc:
         print ("Error create DB")
@@ -111,7 +113,7 @@ def save_chat(message):
     except Exception as exc:
         print ("Error save chat")
         print (exc)
-            
+
 def load_chats():
     try:
         with closing(pymysql.connect(
@@ -157,18 +159,18 @@ def check_visible(message):
 
 @bot.message_handler(commands=["start"])
 def start_message(message):
-    bot.send_message(message.chat.id, "Привет " + 
-        message.from_user.username + "!\nЭто чат, ты здесь можешь сообщение и другие его увидят")
+    bot.send_message(message.chat.id, u"Привет " +
+        message.from_user.username + u"\nЭто чат, ты здесь можешь сообщение и другие его увидят")
     try:
         if not check_chat(message):
             print('New chat ' + str(message.chat.id))
             save_chat(message)
             markup = telebot.types.InlineKeyboardMarkup()
-            buttonv = telebot.types.InlineKeyboardButton(text='visible', callback_data='visible|' + 
+            buttonv = telebot.types.InlineKeyboardButton(text='visible', callback_data='visible|' +
                                                          str(message.chat.id) + '|' + str(message.from_user.id))
-            buttoni = telebot.types.InlineKeyboardButton(text='invisible', callback_data='invisible|' + 
+            buttoni = telebot.types.InlineKeyboardButton(text='invisible', callback_data='invisible|' +
                                                          str(message.chat.id) + '|' + str(message.from_user.id))
-            buttonw = telebot.types.InlineKeyboardButton(text='weather', callback_data='weather|' + 
+            buttonw = telebot.types.InlineKeyboardButton(text='weather', callback_data='weather|' +
                                                          str(message.chat.id) + '|' + str(message.from_user.id))
             markup.add(buttonv)
             markup.add(buttoni)
@@ -192,11 +194,11 @@ def query_handler(call):
 @bot.message_handler(commands=["help"])
 def help(message):
     markup = telebot.types.InlineKeyboardMarkup()
-    buttonv = telebot.types.InlineKeyboardButton(text='visible', callback_data='visible|' + 
+    buttonv = telebot.types.InlineKeyboardButton(text='visible', callback_data='visible|' +
                                                          str(message.chat.id) + '|' + str(message.from_user.id))
-    buttoni = telebot.types.InlineKeyboardButton(text='invisible', callback_data='invisible|' + 
+    buttoni = telebot.types.InlineKeyboardButton(text='invisible', callback_data='invisible|' +
                                                          str(message.chat.id) + '|' + str(message.from_user.id))
-    buttonw = telebot.types.InlineKeyboardButton(text='weather', callback_data='weather|' + 
+    buttonw = telebot.types.InlineKeyboardButton(text='weather', callback_data='weather|' +
                                                          str(message.chat.id) + '|' + str(message.from_user.id))
     markup.add(buttonv)
     markup.add(buttoni)
@@ -210,7 +212,7 @@ def visible(message, chat_id = False, user_id = False):
         chat_id = message.chat.id
     if not user_id:
         user_id = message.from_user.id
-        
+
     try:
         with closing(pymysql.connect(
             host=config.DATABASE_CONFIG['host'],
@@ -224,10 +226,10 @@ def visible(message, chat_id = False, user_id = False):
                 query = "UPDATE users SET visible = 1 WHERE user_id = " + str(user_id)
                 cursor.execute(query)
                 connection.commit()
-                bot.send_message(chat_id, "Твой ник видно в чате")
+                bot.send_message(chat_id, u"Твой ник видно в чате")
     except Exception as exc:
         print ('visible')
-        print (exc)    
+        print (exc)
 
 # invisible
 @bot.message_handler(commands=["invisible"])
@@ -236,7 +238,7 @@ def invisible(message, chat_id = False, user_id = False):
         chat_id = message.chat.id
     if not user_id:
         user_id = message.from_user.id
-        
+
     try:
         with closing(pymysql.connect(
             host=config.DATABASE_CONFIG['host'],
@@ -250,7 +252,7 @@ def invisible(message, chat_id = False, user_id = False):
                 query = "UPDATE users SET visible = 0 WHERE user_id = " + str(user_id)
                 cursor.execute(query)
                 connection.commit()
-                bot.send_message(chat_id, "Твой ник не отображается в чате")
+                bot.send_message(chat_id, u"Твой ник не отображается в чате")
     except Exception as exc:
         print ('invisible')
         print (exc)
@@ -261,14 +263,14 @@ def weather(message, chat_id = False, user_id = False):
         chat_id = message.chat.id
     if not user_id:
         user_id = message.from_user.id
-        
-    
+
+
     owm = pyowm.OWM(config.API['OWMapikey'])
     observation = owm.weather_at_place('Moscow')
     w = observation.get_weather()
     temp = str(w.get_temperature('celsius')['temp']).split('.')[0]
     bot.send_message(chat_id, 'Temperature: ' + temp + ' C')
-    
+
 '''
 ECHO
 '''
@@ -281,37 +283,37 @@ def echo_all(message):
             save_chat(message)
 
         chats = load_chats()
-        
+
         if check_visible(message):
             username = message.from_user.username
         else:
-            username = "Аноним"
-    
+            username = u"Аноним"
+
         # echo message
         for chat in chats:
             if chat:# and str(message.chat.id) != chat:
                 if message.content_type == 'text':
-                    bot.send_message(chat, username + " отправил:\n" + message.text)
+                    bot.send_message(chat, username + u" отправил:\n" + message.text)
                 if message.content_type == 'photo':
-                    bot.send_message(chat, username + " отправил: ")
+                    bot.send_message(chat, username + u" отправил: ")
                     for photo in message.photo:
                         bot.send_photo(chat, photo.file_id)
                 if message.content_type == 'sticker':
-                    bot.send_message(chat, username + " отправил: ")
+                    bot.send_message(chat, username + u" отправил: ")
                     bot.send_sticker(chat, message.sticker.file_id)
                 if message.content_type == 'audio':
-                    bot.send_message(chat, username + " отправил: ")
+                    bot.send_message(chat, username + u" отправил: ")
                     bot.send_audio(chat, message.audio.file_id)
                 if message.content_type == 'voice':
-                    bot.send_message(chat, username + " отправил: ")
+                    bot.send_message(chat, username + u" отправил: ")
                     bot.send_voice(chat, message.voice.file_id)
                 if message.content_type == 'video':
-                    bot.send_message(chat, username + " отправил: ")
+                    bot.send_message(chat, username + u" отправил: ")
                     bot.send_video(chat, message.video.file_id)
                 if message.content_type == 'document':
-                    bot.send_message(chat, username + " отправил: ")
+                    bot.send_message(chat, username + u" отправил: ")
                     bot.send_document(chat, message.document.file_id)
-    
+
     except Exception as exc:
         print ("Error echo")
         print (exc)
