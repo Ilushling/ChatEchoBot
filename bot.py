@@ -264,37 +264,42 @@ def switch_resize_image_for_sticker(message):
         bot.send_message(message.chat.id, 'Преобразование для стикера отменено')
 
 def resize_image_for_sticker(message):
+    global need_resize_image_for_sticker
     try:
-        file = bot.download_file(bot.get_file(message.document.file_id).file_path)
-        src_original = message.document.file_name
-        with open(src_original, 'wb') as new_file:
-            new_file.write(file)
-        image = Image.open(src_original)
-        width = image.width
-        height = image.height
-        if width > 512 or height > 512:
-            if width > height:
-                factor = 512 / width
-            else:
-                factor = 512 / height
-        image = image.resize((int(width * factor), int(height * factor)), Image.ANTIALIAS)
+        if need_resize_image_for_sticker == True:
+            src_original = message.document.file_name
+            src_converted = 'converted_' + os.path.splitext(message.document.file_name)[0] + '.png'
 
-        src_converted = 'converted_' + message.document.file_name
-        image.save(src_converted, "PNG")
-        if message.document.mime_type == 'image/jpeg' or message.document.mime_type == 'image/png':
-            bot.send_document(message.from_user.id, open(src_converted, 'rb'))
-            bot.send_message(message.chat.id, 'Изображение преобразовано')
-            if os.path.isfile(src_converted):
-                os.remove(src_converted)
-                if os.path.isfile(src_original):
-                    os.remove(src_original)
-                    need_resize_image_for_sticker = False
+            file = bot.download_file(bot.get_file(message.document.file_id).file_path)
+            with open(src_original, 'wb') as new_file:
+                new_file.write(file)
+            image = Image.open(src_original)
+            width = image.width
+            height = image.height
+            if width > 512 or height > 512:
+                if width > height:
+                    factor = 512 / width
+                else:
+                    factor = 512 / height
+            image = image.resize((int(width * factor), int(height * factor)), Image.ANTIALIAS)
+
+            image.save(src_converted, "PNG")
+            if message.document.mime_type == 'image/jpeg' or message.document.mime_type == 'image/png':
+                bot.send_document(message.from_user.id, open(src_converted, 'rb'))
+                bot.send_message(message.chat.id, 'Изображение преобразовано')
+                if os.path.isfile(src_converted):
+                    os.remove(src_converted)
+                    if os.path.isfile(src_original):
+                        os.remove(src_original)
+                        need_resize_image_for_sticker = False
+                    else:
+                        print("Error: %s file not found" % src_converted)
                 else:
                     print("Error: %s file not found" % src_converted)
             else:
-                print("Error: %s file not found" % src_converted)
+                bot.send_message(message.chat.id, 'Отправьте jpg или png')
         else:
-            bot.send_message(message.chat.id, 'Отправьте jpg или png')
+            print ("need_resize_image_for_sticker = false")
     except Exception as exc:
         print ("Error resize")
         print (exc)
