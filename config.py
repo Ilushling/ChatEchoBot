@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 DATABASE_CONFIG = {
     'host': '127.0.0.1',
     'db': 'db',
@@ -6,7 +7,7 @@ DATABASE_CONFIG = {
     'charset': 'utf8mb4'
 }
 API = {
-    'OWMapikey': '1',
-    'Telegramapikey': '2'
+    'OWMApiKey': '1',
+    'TelegramApiKey': '2'
 }
 PROXY = 'socks5h://name@name.name:9999'
