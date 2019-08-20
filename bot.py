@@ -323,7 +323,8 @@ def echo_all(message):
 
         # echo message
         for chat in chats:
-            if chat:# and str(message.chat.id) != chat:
+            if chat and str(message.chat.id) != chat:
+            #if chat and str(message.chat.id) != chat:
                 if message.content_type == 'text':
                     bot.send_message(chat, username + u" отправил:\n" + message.text)
                 if message.content_type == 'photo':
