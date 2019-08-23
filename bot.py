@@ -159,9 +159,9 @@ def check_visible(message):
 
 @bot.message_handler(commands=["start"])
 def start_message(message):
-    bot.send_message(message.chat.id, u"Привет " +
-        message.from_user.username + u"\nЭто чат, ты здесь можешь отправить сообщение и другие его увидят")
     try:
+        bot.send_message(message.chat.id, u"Привет " +
+        str(message.from_user.username) + u"\nЭто чат, ты здесь можешь отправить сообщение и другие его увидят")
         if not check_chat(message):
             print('New chat ' + str(message.chat.id))
             save_chat(message)
@@ -259,7 +259,7 @@ def switch_resize_image_for_sticker(message):
     global need_resize_image_for_sticker
     need_resize_image_for_sticker = not need_resize_image_for_sticker
     if need_resize_image_for_sticker == True:
-        bot.send_message(message.chat.id, 'Для преобразования изображения для стикера отправьте jpg или png')
+        bot.send_message(message.chat.id, 'Для преобразования изображения для стикера отправьте jpg или png как документ')
     else:
         bot.send_message(message.chat.id, 'Преобразование для стикера отменено')
 
@@ -276,11 +276,11 @@ def resize_image_for_sticker(message):
             image = Image.open(src_original)
             width = image.width
             height = image.height
-            if width > 512 or height > 512:
-                if width > height:
-                    factor = 512 / width
-                else:
-                    factor = 512 / height
+            if width > height:
+                factor = 512 / width
+            else:
+                factor = 512 / height
+            print (factor)
             image = image.resize((int(width * factor), int(height * factor)), Image.ANTIALIAS)
 
             image.save(src_converted, "PNG")
@@ -323,7 +323,7 @@ def echo_all(message):
 
         # echo message
         for chat in chats:
-            if chat and str(message.chat.id) != chat:
+            if chat:
             #if chat and str(message.chat.id) != chat:
                 if message.content_type == 'text':
                     bot.send_message(chat, username + u" отправил:\n" + message.text)
