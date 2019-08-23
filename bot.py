@@ -280,7 +280,6 @@ def resize_image_for_sticker(message):
                 factor = 512 / width
             else:
                 factor = 512 / height
-            print (factor)
             image = image.resize((int(width * factor), int(height * factor)), Image.ANTIALIAS)
 
             image.save(src_converted, "PNG")
