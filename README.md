@@ -4,9 +4,9 @@ Telegram echo bot
 
 Install:
 ```
-1) Python https://www.python.org/downloads/
-2) MySQL Server
-3) Enter to cmd:
+1) Python
+2) MySQL
+3) Enter to terminal:
 pip install pyTelegramBotAPI
 pip install pymysql
 pip install pyowm
